@@ -131,23 +131,10 @@ void initControlInput(void)
 	// Turn on ADC
 	ADC3->CR2 |= 1 << 0;
 
-#if 0
-	// Trigger detection on rising edge
-	ADC3->CR2 |= (1 << 28);
-	// Timer 8 TRGO event as external trigger
-	ADC3->CR2 |= (1 << 27) | (1 << 26) | (1 << 25);
-	// ADC DMA
-	ADC3->CR2 |= (1 << 9) | (1 << 8);
-
-	/*** ONLY WORKS FOR CHANNELS 10-15 ***/
-	// 15 cycles sampling time
-	ADC3->SMPR1 |= (1 << ((10-10)*3));
-	// First conversion
-	ADC3->SQR3 |= 10;
-
-	// ADC enable
-	ADC3->CR2 |= (1 << 0);
-#endif
+	// Enable global interrupt for ADC
+	NVIC_SetPriorityGrouping(2);
+	NVIC_SetPriority (ADC_IRQn, 10);
+	NVIC_EnableIRQ(ADC_IRQn);
 }
 
 void UART_Init(USART_TypeDef* huart, uint32_t baud, uint8_t* pDst, uint8_t size)

@@ -105,6 +105,7 @@ int main(void)
 	HAL_Init();
 	SystemClock_Config();
 	UART_Init(UART4, 230400, (uint8_t*)UART_buff, UART_BUFF_SIZE);
+	initControlInput();
 	/*** FOR DEBUG ***/
 	// PE8, PE9, PE10
 	RCC->AHB1ENR |= (1 << 4);
@@ -144,6 +145,20 @@ void DMA2_Stream0_IRQHandler(void)
 	}
 }
 
+// Interrupt handler for control input on ADC3
+void ADC_IRQHandler(void)
+{
+	// Check if EOC bit is set
+	if(ADC3->SR & (1 << 1))
+	{
+		char str[6];
+		uint16_t ADCValue = (uint16_t)ADC3->DR;
+		sprintf(str, "Control value: %d\n", ADCValue);
+		UART_Transmit(UART4, (uint8_t*)str, 0);
+		// Clear EOC bit
+		ADC3->SR &= ~(1 << 1);
+	}
+}
 
 
 

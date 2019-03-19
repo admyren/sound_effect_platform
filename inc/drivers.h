@@ -49,6 +49,8 @@ void initSignalPath(uint16_t *bufferIn1, uint16_t *bufferIn2,
 void UART_Init(USART_TypeDef* huart, uint32_t baud, uint8_t* pDst, uint8_t size);
 void UART_Transmit(USART_TypeDef* huart, uint8_t* data, uint8_t size);
 
+void initControlInput(void);
+
 //void initUART(uint32_t BAUD);
 //void UART_puts(uint8_t* data, uint16_t size);
 
