@@ -190,8 +190,8 @@ void design_IIR(Filter_TypeDef* hFilter)
 	hIIR->fCoeffs[1] = bf_z[1];		// b_1
 	hIIR->fCoeffs[2] = bf_z[0];		// b_0
 	// -u _printf_float
-
-#if 1
+// used for debug
+#if 0
 	char str[40];
 
 	sprintf(str, "%f  ", hIIR->sCoeffs[0]);
@@ -243,24 +243,24 @@ void exec_Filters(Ch_TypeDef* hCh)
 		for(i=0; i<MAX_FILTERS; i++)
 		{
 			// Execute filter if it is used
-			if(hFilters[i].used_flag == IS_USED)
+			if(hFilters->used_flag == IS_USED)
 			{
-				if(hFilters[i].topology == FIR)
+				if(hFilters->topology == FIR)
 				{
-					FIR_Filter(hFilters[i].FIR_instance, BUFFER_SIZE/2);
+					FIR_Filter(hFilters->FIR_instance, BUFFER_SIZE/2);
 				}
-				else if(hFilters[i].topology == IIR)
+				else if(hFilters->topology == IIR)
 				{
-					IIR_Filter(hFilters[i].IIR_instance, BUFFER_SIZE/2);
+					IIR_Filter(hFilters->IIR_instance, BUFFER_SIZE/2);
 
 				}
 			}
 			// Else, copy it to the next buffer
-			else if(hFilters[i].used_flag == NOT_USED)
+			else if(hFilters->used_flag == NOT_USED)
 			{
 				for(j=0; j<BUFFER_SIZE/2; j++)
 				{
-					hFilters[i].pDst[j] = hFilters[i].pSrc[j];
+					hFilters->pDst[j] = hFilters->pSrc[j];
 				}
 			}
 
@@ -368,6 +368,7 @@ void IIR_Filter(IIR_TypeDef* hIIR, uint16_t blkSize)
 
 void FIR_Filter(FIR_TypeDef* hFIR, uint16_t blkSize)
 {
+#if 1
 	int16_t i,j,k;
 	float sum;
 	float *c;
@@ -392,6 +393,35 @@ void FIR_Filter(FIR_TypeDef* hFIR, uint16_t blkSize)
 			k = hFIR->order-1;
 	}
 	hFIR->index = k; // Update circular buffer index
+#else
+	for(uint16_t i=0; i<BUFFER_SIZE/2; i++)
+	{
+		hFIR->pDst[i] = hFIR->pSrc[i];
+	}
+
+#endif
+
+}
+
+void init_Filter(Filter_TypeDef *hFilter, uint16_t buffer_size, float *pSrc, float *pDst)
+{
+	hFilter->topology = FIR;
+	hFilter->topologyBuff = FIR;
+	hFilter->order = 10;
+	hFilter->cutOff[0] = 4000;
+	hFilter->cutOff[1] = 8000;
+	hFilter->pSrc = pSrc;
+	hFilter->pDst = pDst;
+	hFilter->type = LP;
+
+
+	hFilter->FIR_instance = malloc(sizeof(FIR_TypeDef));
+	hFilter->FIR_instance->h = malloc(MAX_ORDER_FIR*sizeof(float));
+	hFilter->FIR_instance->state_buffer = malloc((MAX_ORDER_FIR+buffer_size/2)*sizeof(float));
+	hFilter->FIR_instance->order = hFilter->order;
+	hFilter->FIR_instance->index = 0;
+	hFilter->FIR_instance->pSrc = hFilter->pSrc;
+	hFilter->FIR_instance->pDst = hFilter->pDst;
 
 }
 

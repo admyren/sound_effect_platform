@@ -29,7 +29,7 @@ void initSignalPath(uint16_t *bufferIn1, uint16_t *bufferIn2,
 
 	/****** ADC’s config. *****/
 	// ADC1, ADC2 and ADC3 clock enable
-	RCC->APB2ENR |= (1 << 10) | (1 << 9) | (1 << 8);
+	RCC->APB2ENR |= (1 << 9) | (1 << 8);
 
 	ADC_config(ADC1, 14);
 	ADC_config(ADC2, 12);
@@ -118,10 +118,13 @@ void initSignalPath(uint16_t *bufferIn1, uint16_t *bufferIn2,
 
 void initControlInput(void)
 {
+	/****** ADC3 config. *****/
+	// ADC3 clock enable
+	RCC->APB2ENR |= (1 << 10);
+
 	// EOC interrupt enable
 	ADC3->CR1 |= 1 << 5;
-	// Start conversion
-	ADC3->CR2 |= 1 << 30;
+
 	// Continuous conversion
 	ADC3->CR2 |= 1 << 1;
 	// Sampling time = 84 cycles for channel 10
@@ -130,6 +133,8 @@ void initControlInput(void)
 	ADC3->SQR3 |= 10;
 	// Turn on ADC
 	ADC3->CR2 |= 1 << 0;
+	// Start conversion
+	ADC3->CR2 |= 1 << 30;
 
 	// Enable global interrupt for ADC
 	NVIC_SetPriorityGrouping(2);
@@ -272,4 +277,14 @@ static void DMA_config(DMA_Stream_TypeDef* hdma, DMA_InitVals idma)
 	hdma->CR |= (idma.mode << 8);
 	// Enable DMA
 	hdma->CR |= (1 << 0);
+}
+
+/* TODO: finish this function that sets the GPIO registers for a correct configuration */
+void GPIO_config(GPIO_TypeDef* gpio, GPIO_InitVals conf_val)
+{
+	gpio->OSPEEDR;
+	gpio->MODER;
+	gpio->OTYPER;
+	gpio->OSPEEDR;
+	gpio->PUPDR;
 }

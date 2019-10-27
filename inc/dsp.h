@@ -132,6 +132,7 @@ void init_Channel(Ch_TypeDef* hCh, float* pDst, float* buff1, float* buff2);
 void init_Sum(SUM_TypeDef* hsum, float* outBuff);
 void exec_Filters(Ch_TypeDef* hCh);
 void exec_Sum(SUM_TypeDef* hsum);
+void init_Filter(Filter_TypeDef *hFilter, uint16_t buffer_size, float *pSrc, float *pDst);
 
 
 

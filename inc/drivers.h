@@ -43,6 +43,48 @@ typedef struct
 	uint32_t mode;					// Circular mode or not
 }DMA_InitVals;
 
+/*-------------- GPIO DRIVER TYPES ------------*/
+// GPIO mode selection
+typedef enum
+{
+	INPUT,
+	OUPUT,
+	ALTERNATE,
+	ANALOG,
+}mode_Vals;
+
+// GPIO output type selection
+typedef enum
+{
+	PUSH_P,
+	OPEN_D
+}output_t_Vals;
+
+// GPIO output type speed
+typedef enum
+{
+	LOW,
+	MED,
+	HIGH,
+	VHIGH
+}output_s_Vals;
+
+// GPIO pull selection
+typedef enum
+{
+	NO_PULL,
+	PULL_UP,
+	PULL_DOWN,
+}pull_Vals;
+
+typedef struct
+{
+	mode_Vals mode;
+	output_t_Vals output_type;
+	output_s_Vals output_speed;
+	uint32_t pull;
+}GPIO_InitVals;
+
 
 void initSignalPath(uint16_t *bufferIn1, uint16_t *bufferIn2,
 					uint16_t *bufferOut1, uint16_t *bufferOut2, uint16_t bufferSize);

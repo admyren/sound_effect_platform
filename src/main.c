@@ -38,20 +38,35 @@ float ADC1Buff[BUFFER_SIZE/2];
 float ADC2Buff[BUFFER_SIZE/2];
 
 // Intermediate buffers
+float inBuff1[BUFFER_SIZE/2];
+float inBuff2[BUFFER_SIZE/2];
+
 float resultBuff1[BUFFER_SIZE/2];
 float resultBuff2[BUFFER_SIZE/2];
 
+volatile uint16_t ADCValue = 4000;
+volatile uint16_t prev_ADCValue = 0;
+
+Filter_TypeDef filters[2];
 
 
 void SystemClock_Config(void);
 
 
 
-
+#define FILTER_ON 1
 static void DSPTask(void* params)
 {
 	while(1)
 	{
+		//ADCValue = (uint16_t)ADC3->DR;
+		filters[0].cutOff[0] = 100+4*ADCValue;
+		filters[1].cutOff[0] = 100+4*ADCValue;
+		if(prev_ADCValue != ADCValue)
+		{
+			design_FIR(&filters[0]);
+			design_FIR(&filters[1]);
+		}
 		/*** WAIT FOR FIRST HALF OF BUFFER ***/
 		if(xSemaphoreTake(ADCDMAInterruptSignal1, 0xffff) == pdTRUE)
 		{
@@ -60,13 +75,18 @@ static void DSPTask(void* params)
 				ADC1Buff[i] = (float)(ADC1InBuff[i]-2048);
 				ADC2Buff[i] = (float)(ADC2InBuff[i]-2048);
 			}
+#if FILTER_ON
+			FIR_Filter(filters[0].FIR_instance, BUFFER_SIZE/2);
+			FIR_Filter(filters[1].FIR_instance, BUFFER_SIZE/2);
+#else
 
 			for(uint16_t i=0; i<BUFFER_SIZE/2; i++)
 			{
-				resultBuff1[i] = ADC1Buff[i];
-				resultBuff2[i] = ADC2Buff[i];
+				resultBuff1[i] = (((float)ADCValue)/4095)*ADC1Buff[i];
+				resultBuff2[i] = (((float)ADCValue)/4095)*ADC2Buff[i];
 			}
 
+#endif
 			for(uint16_t i=0; i<BUFFER_SIZE/2; i++)
 			{
 				DAC1OutBuff[i] = (uint16_t)(resultBuff1[i] + 2048);
@@ -82,13 +102,16 @@ static void DSPTask(void* params)
 				ADC1Buff[i] = (float)(ADC1InBuff[i+BUFFER_SIZE/2]-2048);
 				ADC2Buff[i] = (float)(ADC2InBuff[i+BUFFER_SIZE/2]-2048);
 			}
-
+#if FILTER_ON
+			FIR_Filter(filters[0].FIR_instance, BUFFER_SIZE/2);
+			FIR_Filter(filters[1].FIR_instance, BUFFER_SIZE/2);
+#else
 			for(uint16_t i=0; i<BUFFER_SIZE/2; i++)
 			{
-				resultBuff1[i] = ADC1Buff[i];
-				resultBuff2[i] = ADC2Buff[i];
+				resultBuff1[i] = (((float)ADCValue)/4095)*ADC1Buff[i];
+				resultBuff2[i] = (((float)ADCValue)/4095)*ADC2Buff[i];
 			}
-
+#endif
 			for(uint16_t i=0; i<BUFFER_SIZE/2; i++)
 			{
 				DAC1OutBuff[i+BUFFER_SIZE/2] = (uint16_t)(resultBuff1[i]+2048);
@@ -111,11 +134,15 @@ int main(void)
 	RCC->AHB1ENR |= (1 << 4);
 	GPIOE->MODER |= (1 << 16) | (1 << 18) | (1 << 20);
 
+	init_Filter(&filters[0], BUFFER_SIZE, ADC1Buff, resultBuff1);
+	init_Filter(&filters[1], BUFFER_SIZE, ADC2Buff, resultBuff2);
+
 	ADCDMAInterruptSignal1 = xSemaphoreCreateBinary();
 	ADCDMAInterruptSignal2 = xSemaphoreCreateBinary();
 
 	initSignalPath(ADC1InBuff, ADC2InBuff,
 			    DAC1OutBuff, DAC2OutBuff, BUFFER_SIZE);
+	initControlInput();
 
 	xTaskCreate(DSPTask, "DSPTask", 2000, NULL, 5, NULL);
 	vTaskStartScheduler();
@@ -151,10 +178,11 @@ void ADC_IRQHandler(void)
 	// Check if EOC bit is set
 	if(ADC3->SR & (1 << 1))
 	{
-		char str[6];
-		uint16_t ADCValue = (uint16_t)ADC3->DR;
-		sprintf(str, "Control value: %d\n", ADCValue);
-		UART_Transmit(UART4, (uint8_t*)str, 0);
+		//char str[6];
+		prev_ADCValue = ADCValue;
+		ADCValue = (uint16_t)ADC3->DR;
+		//sprintf(str, "Control value: %d\n", ADCValue);
+		//UART_Transmit(UART4, (uint8_t*)str, 0);
 		// Clear EOC bit
 		ADC3->SR &= ~(1 << 1);
 	}
